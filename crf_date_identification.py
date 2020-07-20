@@ -8,6 +8,8 @@ import jieba.posseg as psg
 #   2. 核心正则表达式感觉还有些问题，普适性不强
 #   3. 对于parse_datetime(msg)中传入year2dig和cn2dig的参数，感觉不太需要把最后一个字符去掉，有可能会造成错误，
 #      比如: "三点十五"，那么就会去掉"五"，造成错误
+#   4. parse(msg, fuzzy=True)的问题，如果加上fuzzy=True，那么有些句子进入不了except语句导致错误，
+#      但是如果不加的话，那么有些语句无法解析也会错误
 
 # 预定义模板, 将具体文本转换成数字
 UTIL_CN_NUM = {
@@ -21,7 +23,7 @@ def check_time_valid(word):
     """
     对拼接字符串近一步处理，以进行有效性判断
     :param word: time_res中的每一项(每一项切割出来的时间)
-    :return: 
+    :return: 清洗后的句子
     """
     # match()匹配成功返回对象，否则返回None，
     # match是全匹配，即从头到尾，而$是匹配最后，从match源码来看，如果str是存在非数字的情况会直接返回None
@@ -137,7 +139,7 @@ def parse_datetime(msg):
                      r"([0-9一二两三四五六七八九十]+ [号日])? ([上中下午晚早]+)?"
                      r"([0-9零一二两三四五六七八九十百]+[点:.时])?([0-9零一二三四五六七八九十百]+ 分?)?"
                      r"([0-9零一二三四五六七八九十百]+ 秒)?", msg)
-        if m.group(0) is not None:
+        if m and m.group(0) is not None:
             res = {
                 'year': m.group(1),
                 "month": m.group(2),
@@ -184,9 +186,8 @@ def time_extract(text):
         对句子进行解析，提取其中所有能表示日期时间的词，并进行上下文拼接
 
     :param text: 每一个请求文本
-    :return: 
+    :return: 解析出来后最终的句子
     """
-    print("--------------------")
 
     time_res = []
     word = ''
